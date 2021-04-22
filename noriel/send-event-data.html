@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<script>
+    const API_URL = 'https://webapp-210421182408.azurewebsites.net/userActionTypes'; //TODO update with real API url
+    const UNKNOWN_USER = 'NOT LOGGED IN';
+
+    const ActionTypes = {
+        ADD_TO_CART: 'addToCart', //Add to cart
+        REMOVE_FROM_CART: 'removeFromCart', //Remove from cart
+        CHECKOUT: 'checkout', //Checkout cart
+        PRODUCT_VIEW: 'viewProduct', //Product view
+        PRODUCTS_VIEW: 'viewProducts' //Products view
+    }
+    Object.freeze(ActionTypes);
+
+    const PayloadFields = {
+        EMAIL_HASH: 'emailHash',
+        ACTION_TYPE: 'actionType',
+        PRODUCTS_ID: 'productsId'
+    }
+    Object.freeze(PayloadFields);
+
+    const isUserLoggedIn = (emailHash) => {
+        return emailHash && emailHash !== UNKNOWN_USER;
+    }
+
+    const hasCorrectActionType = (actionType) => {
+        return actionType === ActionTypes.ADD_TO_CART
+            || actionType === ActionTypes.REMOVE_FROM_CART
+            || actionType === ActionTypes.CHECKOUT
+            || actionType === ActionTypes.PRODUCT_VIEW
+            || actionType === ActionTypes.PRODUCTS_VIEW;
+    }
+
+    const hasProducts = (productsId) => {
+        return productsId;
+    }
+
+    const sendEventData = async () => {
+        let params = location.href.split('?')[1].split('&');
+        params = params.map(param => {
+            const values = param.split('=');
+            return {
+                key: values[0],
+                value: values[1]
+            };
+        });
+
+        let productsId = params.find(value => value.key === PayloadFields.PRODUCTS_ID);
+        productsId = decodeURIComponent(productsId.value);
+        let actionType = params.find(value => value.key === PayloadFields.ACTION_TYPE);
+        actionType = decodeURIComponent(actionType.value);
+        let emailHash = params.find(value => value.key === PayloadFields.EMAIL_HASH);
+        emailHash = decodeURIComponent(emailHash.value);
+
+        const payload = {
+            productsId: productsId,
+            actionType: actionType,
+            emailHash: emailHash,
+            timestamp: new Date().toISOString()
+        };
+        if (isUserLoggedIn(emailHash) && hasCorrectActionType(actionType) && hasProducts(productsId)) {
+            const response = await fetch(API_URL,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+					headers:{
+						'content-type': 'application/json'
+					},
+                    //mode: 'no-cors'
+                }
+            );
+			console.log(response);
+            return response;
+        } else {
+            console.log('Incorrect input data', payload);
+            return null;
+        }
+    }
+    sendEventData();
+</script>
+</body>
+</html>

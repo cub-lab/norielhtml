@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<script>
+    const UNKNOWN_USER = 'NOT LOGGED IN';
+    const API_URL = 'https://webapp-210421182408.azurewebsites.net/userRecommendations'; //TODO update with real API url
+
+    const PayloadFields = {
+        EMAIL_HASH: 'emailHash'
+    }
+    Object.freeze(PayloadFields);
+
+    const isUserLoggedIn = (emailHash) => {
+        return emailHash && emailHash !== UNKNOWN_USER;
+    }
+
+    const getUserRecommendations = async () => {
+        let params = location.href.split('?')[1].split('&');
+        params = params.map(param => {
+            const values = param.split('=');
+            return {
+                key: values[0],
+                value: values[1]
+            };
+        });
+
+        let emailHash = params.find(value => value.key === PayloadFields.EMAIL_HASH);
+        emailHash = decodeURIComponent(emailHash.value);
+
+        const payload = {
+            emailHash: emailHash,
+        };
+        if (isUserLoggedIn(emailHash)) {
+            const response = await fetch(API_URL,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+					headers:{
+						'content-type': 'application/json'
+					},
+                    //mode: 'no-cors'
+                }
+            );
+            console.log(response);
+            return response;
+        } else {
+            console.log('Incorrect input data', emailHash);
+            return null;
+        }
+    }
+    getUserRecommendations();
+</script>
+</body>
+</html>
